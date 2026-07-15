@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SABER Biology-Prior Filter — Slide-by-Slide Guide</title>
+<style>
+  :root{
+    /* neutrals biased toward a clinical teal-slate; accent is an oxidative amber (IsoLG = lipid peroxidation) */
+    --paper:#f6f7f9; --ink:#141a22; --ink2:#3b4655; --muted:#6b7789; --line:#dfe4ea;
+    --slate:#1b2734; --slate2:#243343;
+    --amber:#c2701a;   /* IsoLG / oxidative accent */
+    --amber-soft:#f3e2cc;
+    --teal:#0f7d78;    /* SHR / antibody thread */
+    --teal-soft:#d6ebe8;
+    --good:#1f7a4d; --warn:#b7791f; --bad:#b23a48;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;line-height:1.6}
+  .u{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  .s{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{padding:44px 7vw 30px;margin-left:240px;background:linear-gradient(160deg,var(--slate),var(--slate2));color:#eef2f6}
+  @media(max-width:980px){header{margin-left:0}}
+  header .kick{font-family:-apple-system,Segoe UI,sans-serif;text-transform:uppercase;letter-spacing:.28em;
+    font-size:12px;color:#8ea6bf;margin-bottom:12px}
+  header h1{font-size:34px;line-height:1.15;margin:0 0 12px;text-wrap:balance;font-weight:600}
+  header p{max-width:60ch;color:#c4d0dc;font-size:15.5px;margin:0}
+  .legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:22px;font-family:-apple-system,Segoe UI,sans-serif;font-size:13px}
+  .legend span{display:inline-flex;align-items:center;gap:8px;color:#d6e0ea}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .wrap{max-width:1000px;margin:0 auto;margin-left:240px;padding:0 7vw 90px}
+  @media(max-width:980px){.wrap{margin:0 auto;padding:0 5vw 90px}.toc{display:none}}
+
+  /* fixed, always-visible slide navigator */
+  .toc{position:fixed;top:0;left:0;width:240px;height:100vh;overflow-y:auto;
+    background:var(--slate);color:#dfe6ee;font-family:-apple-system,Segoe UI,sans-serif;
+    padding:18px 14px 30px;box-sizing:border-box;z-index:50;border-right:1px solid rgba(255,255,255,.08)}
+  .toc::-webkit-scrollbar{width:6px}
+  .toc::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+  .toc .toc-title{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7f92a8;
+    margin:2px 4px 12px}
+  .toc .toc-group{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7f92a8;
+    margin:16px 4px 6px;display:flex;align-items:center;gap:6px}
+  .toc .toc-group:first-of-type{margin-top:4px}
+  .toc .toc-dot{width:8px;height:8px;border-radius:2px;display:inline-block;flex:0 0 auto}
+  .toc a{display:block;font-size:12.5px;color:#c3ccd6;text-decoration:none;padding:6px 8px 6px 16px;
+    border-radius:7px;line-height:1.3;border-left:2px solid transparent}
+  .toc a:hover{background:rgba(255,255,255,.06);color:#fff}
+  .toc a.active{background:rgba(194,112,26,.18);color:#fff;border-left-color:var(--amber)}
+  .toc a.active.t-active{background:rgba(15,125,120,.22);border-left-color:var(--teal)}
+  .toc a.caveat-link{color:#e8c98a}
+  .toc a.caveat-link.active{border-left-color:var(--warn)}
+
+  .track{padding:34px 0 8px}
+  .track h2{font-family:-apple-system,Segoe UI,sans-serif;font-size:14px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:10px;margin:30px 0 4px}
+
+  /* slide card = one presentation slide */
+  .slide{background:#fff;border:1px solid var(--line);border-radius:14px;margin:20px 0;
+    box-shadow:0 1px 0 rgba(20,26,34,.03),0 10px 30px -22px rgba(20,26,34,.4);overflow:hidden}
+  .slide .bar{height:5px}
+  .amberbar{background:linear-gradient(90deg,var(--amber),#e0a45a)}
+  .tealbar{background:linear-gradient(90deg,var(--teal),#4fb3ad)}
+  .slide .inner{padding:26px 30px 28px}
+  .slidehead{display:flex;align-items:baseline;gap:14px;margin-bottom:4px}
+  .snum{font-family:-apple-system,Segoe UI,sans-serif;font-weight:700;font-size:13px;letter-spacing:.05em;
+    padding:3px 10px;border-radius:20px;color:#fff;flex:0 0 auto}
+  .snum.a{background:var(--amber)} .snum.t{background:var(--teal)}
+  .slide h3{font-size:23px;margin:0;font-weight:600;text-wrap:balance}
+  .role{font-family:-apple-system,Segoe UI,sans-serif;font-size:12.5px;color:var(--muted);margin:3px 0 16px}
+
+  .symbol{font-family:"Cambria Math",Cambria,Georgia,serif;font-size:40px;text-align:center;
+    padding:18px;border-radius:12px;margin:6px 0 18px;letter-spacing:.5px}
+  .symbol.a{background:var(--amber-soft);color:#6d3d09}
+  .symbol.t{background:var(--teal-soft);color:#0a4a46}
+  .symbol small{font-size:15px}
+  /* full equations: shrink to fit the card; wrap to a 2nd line rather than overflow if still too long */
+  .symbol.eq{font-size:clamp(11px,2.15vw,22px);overflow-x:visible;letter-spacing:0;white-space:normal;
+    line-height:1.5;overflow-wrap:break-word}
+  .symbol.eq.long{font-size:clamp(10px,1.7vw,17px)}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.cols{grid-template-columns:1fr}}
+  .block{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .block h4{font-family:-apple-system,Segoe UI,sans-serif;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 8px}
+  .block p{margin:0;font-size:14.5px;color:var(--ink2)}
+  .analogy{border-left:3px solid var(--amber);background:#fff;border-radius:0 10px 10px 0}
+  .analogy.t{border-left-color:var(--teal)}
+  .analogy .em{font-style:italic}
+
+  ul.s{margin:10px 0 0;padding-left:20px}
+  ul.s li{font-size:14.5px;color:var(--ink2);margin:5px 0}
+  .say{font-family:-apple-system,Segoe UI,sans-serif;font-size:13.5px;background:var(--slate);color:#e7eef5;
+    border-radius:10px;padding:12px 15px;margin-top:16px}
+  .say b{color:#f0c78a;font-weight:600}
+  .say.t b{color:#7fd7d0}
+
+  .caveat{border:1px dashed var(--warn);background:#fdf6ea;border-radius:12px;padding:18px 22px;margin:18px 0}
+  .caveat h3{font-family:-apple-system,Segoe UI,sans-serif;color:#8a5a10;font-size:18px;margin:0 0 10px}
+  .caveat.t{border-color:var(--teal);background:#eef8f6}
+  .caveat.t h3{color:#0a4a46}
+
+  table{border-collapse:collapse;width:100%;font-family:-apple-system,Segoe UI,sans-serif;font-size:13.5px;margin-top:4px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:var(--paper);color:var(--ink);font-weight:600}
+  .u.k{background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:#6d3d09}
+
+  .flow{display:flex;flex-wrap:wrap;gap:9px;align-items:center;font-family:-apple-system,Segoe UI,sans-serif;font-size:13px}
+  .pill{background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 11px}
+  .pill.hi{background:var(--amber-soft);border-color:#e6c79a;color:#6d3d09;font-weight:600}
+  .ar{color:var(--amber);font-weight:700;font-size:16px}
+
+  .refs a{color:var(--teal);text-decoration:none;border-bottom:1px solid var(--teal-soft)}
+  .refs a:hover{border-bottom-color:var(--teal)}
+  .refslide .inner{padding:26px 30px 30px}
+  .refrow{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .refrow:last-child{border-bottom:0}
+  .refn{font-family:-apple-system,Segoe UI,sans-serif;font-weight:700;color:#fff;background:var(--slate);
+    border-radius:8px;min-width:30px;height:30px;display:grid;place-items:center;font-size:13px;flex:0 0 auto}
+  .refrow .meta{font-family:-apple-system,Segoe UI,sans-serif}
+  .refrow .t1{font-size:15px;font-weight:600;color:var(--ink)}
+  .refrow .t2{font-size:13px;color:var(--muted);margin-top:2px}
+  .refrow .t3{font-size:13px;margin-top:5px}
+  .tip{font-family:-apple-system,Segoe UI,sans-serif;font-size:12.5px;color:var(--muted);
+    margin:6px 0 0;padding-left:2px}
+  .foot{font-family:-apple-system,Segoe UI,sans-serif;color:var(--muted);font-size:12.5px;margin-top:34px;
+    border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<nav class="toc" aria-label="Slide navigator">
+  <div class="toc-title">Jump to slide</div>
+
+  <div class="toc-group"><span class="toc-dot" style="background:var(--amber)"></span>Track 1 — IsoLG</div>
+  <a href="#t1-s1">1 · The equation</a>
+  <a href="#t1-s2">2 · i, j, k defined</a>
+  <a href="#t1-caveat" class="caveat-link">⚠ Caveat — 9-mer fragment</a>
+  <a href="#t1-s3">3 · s·site — lysine chemistry</a>
+  <a href="#t1-s4">4 · max·k — best lysine</a>
+  <a href="#t1-s5">5 · s·expr — tissue + age</a>
+  <a href="#t1-s6">6 · s·overlap — antibody reach</a>
+  <a href="#t1-s7">7 · weights &amp; α</a>
+
+  <div class="toc-group"><span class="toc-dot" style="background:var(--teal)"></span>Track 2 — SHR</div>
+  <a href="#t2-s1">1 · Why a B-cell anchor</a>
+  <a href="#t2-s2">2 · What autoantibody means</a>
+  <a href="#t2-caveat" class="caveat-link">⚠ Caveat — no named targets</a>
+  <a href="#t2-s3">3 · HSP70/HSP72 lookup</a>
+
+  <div class="toc-group"><span class="toc-dot" style="background:var(--slate2)"></span>Close</div>
+  <a href="#refs-slide">References</a>
+</nav>
+<header>
+  <div class="kick">SABER · biology-prior filter</div>
+  <p>Two parallel tracks, same format: the <b>IsoLG</b> chemistry filter and the <b>SHR autoantibody</b> disease anchor.</p>
+  <div class="legend">
+    <span><span class="dot" style="background:#c2701a"></span> IsoLG track — oxidative / chemistry</span>
+    <span><span class="dot" style="background:#0f7d78"></span> SHR track — antibody / disease anchor</span>
+    <span><span class="dot" style="background:#b7791f"></span> caveat slide</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ============ TRACK 1 : ISOLG ============ -->
+<div class="track" id="t1">
+<h2>Track 1 — the IsoLG susceptibility score, symbol by symbol</h2>
+
+<!-- Slide 1: the whole equation -->
+<div class="slide" id="t1-s1"><div class="bar amberbar"></div><div class="inner">
+  <div class="slidehead"><span class="snum a">SLIDE 1</span><h3>The one equation we'll unpack</h3></div>
+  <div class="role">Why this track exists — the direct finding it's built on — then show the whole equation once.</div>
+  <div class="block analogy" style="margin-bottom:14px"><h4>Bloodworth et al. 2024 (J Clin Invest)</h4><p class="em">"IsoLG-adducted candidate peptides... are recognized by CD8<sup>+</sup> T cells... and prime hypertension" — 4 specific IsoLG-adducted self-peptides, from kidney-overexpressed proteins, were experimentally validated as disease-relevant neoantigens in hypertensive mice.</p></div>
+  <div class="symbol a eq">s<sup>IsoLG</sup><sub>ij</sub> = max<sub>k</sub> ( w<sub>site</sub>·s<sup>site</sup><sub>jk</sub> + w<sub>expr</sub>·s<sup>expr</sup><sub>j</sub> + w<sub>overlap</sub>·s<sup>overlap</sup><sub>ijk</sub> )</div>
+  <div class="cols">
+    <div class="block"><h4>What it answers</h4><p>"How much should biology bump this antibody–antigen pair up the priority list — <em>on top of</em> the binding score?"</p></div>
+    <div class="block analogy"><h4>Analogy</h4><p class="em">It's a bonus-points rule. The binding model gives the base score; this adds bonus points when the biology looks right for hypertension.</p></div>
+  </div>
+  <div class="say s">Say: <b>"Bloodworth gave us 4 experimentally validated adduction sites — that's the evidence base. Three ingredients turn it into a score — a site, a tissue, and an overlap. I'll take one per slide, then show the one honest caveat."</b></div>
+</div></div>
+
+<!-- Slide 2: what i, j, k mean -->
+<div class="slide" id="t1-s2"><div class="bar amberbar"></div><div class="inner">
+  <div class="slidehead"><span class="snum a">SLIDE 2</span><h3>i, j, k — what the subscripts count</h3></div>
+  <div class="role">Define the index letters once, before any term uses them.</div>
+  <div class="symbol a eq">i → antibody &nbsp;·&nbsp; j → antigen &nbsp;·&nbsp; k → one lysine on antigen j</div>
+  <div class="cols">
+    <div class="block"><h4>Plain meaning</h4><p>Every score is about <em>something</em> — these three letters say what.
+    <span class="u">i</span> picks <b>which antibody</b>, <span class="u">j</span> picks <b>which antigen</b>, and <span class="u">k</span> picks <b>which lysine</b> on that antigen (an antigen has many).</p></div>
+    <div class="block analogy"><h4>Analogy</h4><p class="em">Think of a spreadsheet: <span class="u">i</span> is the row (antibody), <span class="u">j</span> is the column (antigen), and <span class="u">k</span> is a specific cell inside that column — one lysine among many on that antigen.</p></div>
+  </div>
+  <table>
+    <tr><th>Symbol</th><th>Ranges over</th><th>Depends on antibody?</th><th>Depends on antigen?</th></tr>
+    <tr><td><span class="u">i</span></td><td>the antibody library (SABE)</td><td>—</td><td>—</td></tr>
+    <tr><td><span class="u">j</span></td><td>the antigen library (TMS/UniProt)</td><td>—</td><td>—</td></tr>
+    <tr><td><span class="u">k</span></td><td>lysines on antigen <span class="u">j</span> (the set <span class="u">𝒦<sub>j</sub></span>)</td><td>—</td><td>yes, per-j</td></tr>
+  </table>
+  <div class="say s">Say: <b>"So s^site_jk is antigen-only — no antibody involved. s^overlap_ijk is the one term that brings the antibody i in, because it asks whether i physically reaches lysine k."</b></div>
+</div></div>
+
+<!-- Caveat slide for IsoLG — moved here, right after i/j/k, before the formula is built out -->
+<div class="caveat" id="t1-caveat">
+  <h3>⚠ Caveat (IsoLG) — the 9-mer is a fragment, not the antigen. Why we still build on it.</h3>
+  <div class="cols">
+    <div class="block"><h4>Two separate events</h4>
+      <p><b>1. Adduction</b> happens on the <b>whole folded protein</b> — IsoLG glues to a lysine on full-length SGLT2 etc. <br><br>
+      <b>2. Processing</b> — the cell's <b>proteasome</b> later shreds that protein into <b>8–10&nbsp;aa peptides</b> to show T&nbsp;cells on MHC-I. The Bloodworth 9-mers (e.g. <span class="u k">LAGKNLTHI</span>) are these <em>fragments</em>.</p>
+    </div>
+    <div class="block analogy"><h4>Analogy</h4>
+      <p class="em">The graffiti (adduct) is sprayed on a whole wall. Later, a photographer crops a 9-letter close-up to file a report. The crop isn't the wall — it's evidence about one spot on it.</p></div>
+  </div>
+  <table>
+    <tr><th></th><th>The 9-mer (Bloodworth)</th><th>What an antibody sees</th></tr>
+    <tr><td>Exists as</td><td>a chopped fragment in an MHC groove</td><td>the whole folded protein, unchopped</td></tr>
+    <tr><td>Made for</td><td>CD8<sup>+</sup> T-cell inspection</td><td>nothing — antibody binds the native surface</td></tr>
+  </table>
+  <p class="tip"><b>So why use the 9-mer at all?</b> Only as a <b>sequence signature of a lysine known to get adducted</b> — the "motif" term.
+  We borrow the <em>chemistry around that lysine</em>, <b>not</b> a claim that antibodies see 9-mers. That keeps us honest about T-cell vs B-cell recognition.</p>
+  <p class="tip"><b>Why we still pursue this track despite the mismatch:</b> the adduction chemistry (which lysines get modified, on which proteins) is <b>real and validated</b>, independent of which immune cell later reads it. We're borrowing <em>only</em> that chemistry layer for s<sup>site</sup>/s<sup>expr</sup> — the antibody-binding judgement is never delegated to Bloodworth's T-cell data, it stays entirely with the ranker. This is a bounded, falsifiable use of the evidence, not an overreach.</p>
+</div>
+
+<!-- Slide 3: s_site -->
+<div class="slide" id="t1-s3"><div class="bar amberbar"></div><div class="inner">
+  <div class="slidehead"><span class="snum a">SLIDE 3</span><h3>s<sup>site</sup><sub>jk</sub> — is this lysine attackable?</h3></div>
+  <div class="role">The chemistry term. One lysine <span class="u">k</span> on antigen <span class="u">j</span>. Directly inspired by Bloodworth's screen.</div>
+  <div class="symbol a">s<sup>site</sup><sub>jk</sub></div>
+  <div class="cols">
+    <div class="block"><h4>Plain meaning</h4><p>IsoLG (from oxidative stress) glues itself onto <b>lysine (K)</b> residues — but only lysines that are <b>exposed</b> on the surface, <b>chemically reactive</b>, and <b>resemble a known adduction site</b>. This score rates one lysine on all three.</p></div>
+    <div class="block analogy"><h4>Analogy</h4><p class="em">A door can only be graffitied if it (1) faces the street, (2) has paint that sticks, and (3) looks like doors that have been tagged before. A buried, non-stick, or unfamiliar-looking door is safe.</p></div>
+  </div>
+  <ul class="s">
+    <li><b>① Exposure — how:</b> run <b>NetSurfP-3.0</b> on the antigen sequence → per-residue RSA in [0,1] for every lysine. <span class="u">P<sub>exposed</sub>(k) = RSA(k)</span>. A separate tool call, not a by-product of ESM-C embeddings.
+      <br><span class="tag" style="font-size:11.5px;color:#8a5a10">Feasible at 20k? Yes — free for academic use (institutional registration, no cost), GPU-accelerated, ~30–35 min for 20k sequences on comparable hardware (published benchmark: ~100s/1,000 seqs). Run the local standalone version, not the web server — the web server caps jobs at 10,000 sequences.</span></li>
+    <li><b>② Reactivity — how:</b> in the ±3–5 window around k, count nearby K/R (raises pK<sub>a</sub>, less reactive) vs D/E (lowers pK<sub>a</sub>, more reactive) using a simple charge-table lookup. Compared to nothing else — an intrinsic chemistry property.
+      <br><span class="tag" style="font-size:11.5px;color:#8a5a10">What "reactive" means: lysine's tail can be <b>protonated (+charged, "locked")</b> or <b>neutral ("unlocked")</b> — IsoLG can only attach to the neutral form. <b>pK<sub>a</sub> is a dial for how easily it unlocks</b>: lower pK<sub>a</sub> → stays neutral more often → more reactive. Nearby <b>K/R (positive)</b> neighbours raise that dial (locks it up, less reactive); nearby <b>D/E (negative)</b> neighbours lower it (unlocks it more, more reactive). We just count these neighbours as a cheap stand-in for a full pK<sub>a</sub> calculation.</span></li>
+    <li><b>③ Motif — how (this is the Bloodworth-inspired part):</b> <b>slide a 9-residue window across the entire antigen</b> (not just centred on k) and score every window's similarity — <b>BLOSUM62</b> (default) or ESM-C cosine — against each of the 4 validated peptides (LAGKNLTHI, YILKLPLPL, GSPKQHEVV, MQLPSKVVL). Take the best-matching window overall; if it contains a lysine, that k's motif score is the alignment similarity.
+      <br><span class="tag" style="font-size:11.5px;color:#8a5a10">Feasible at 20k? Yes, with BLOSUM62 as default — a lookup-table sum per window, tens of millions of comparisons total across 20k antigens, seconds–minutes to run. ESM-C cosine similarity is feasible <b>only</b> if pooled from the per-residue embeddings we already compute for the ranker — re-embedding every 9-mer window from scratch would be far too slow.</span>
+      <br><span class="tag" style="font-size:11.5px;color:#8a5a10">Getting an embedding for the 4 Bloodworth 9-mers: none exists pre-made — run ESM-C <b>once per peptide</b>, treating each 9-mer as its own tiny standalone sequence (e.g. just "LAGKNLTHI" alone, no surrounding protein), then average its 9 per-residue output vectors into one reference vector. A one-time, negligible cost (4 short sequences), <b>not</b> repeated per antigen.</span>
+      <br><span class="tag" style="font-size:11.5px;color:#8a5a10">Context mismatch caveat: the 4 reference vectors are embedded in <b>isolation</b> (no surrounding protein), but each antigen window's vector is <b>pooled from residues embedded in their full-protein context</b> — the two sides aren't perfectly like-for-like, which is a real (if usually minor) source of noise. This asymmetry doesn't exist for BLOSUM62 (pure letter-matching either side) — one more reason to prefer it as the default, with ESM-C cosine as an optional, imperfect refinement.</span></li>
+  </ul>
+  <div class="say s">Say: <b>"This is pure chemistry plus one disease-specific signal — sequence in, an off-the-shelf accessibility predictor, and a similarity check against Bloodworth's 4 validated sites."</b></div>
+</div></div>
+
+<!-- Slide 3: the max -->
+<div class="slide" id="t1-s4"><div class="bar amberbar"></div><div class="inner">
+  <div class="slidehead"><span class="snum a">SLIDE 4</span><h3>max<sub>k</sub> — why we take the best lysine</h3></div>
+  <div class="role">Introduced here because k first appears in s<sup>site</sup> — but it actually wraps the whole formula.</div>
+  <div class="symbol a">max<sub>k ∈ 𝒦<sub>j</sub></sub> ( … )</div>
+  <div class="cols">
+    <div class="block"><h4>Plain meaning</h4><p>An antigen has many lysines (the set <span class="u">𝒦<sub>j</sub></span>). We don't average them — we take the <b>single most susceptible one</b>. One good adduction site is enough to make the antigen disease-relevant.</p></div>
+    <div class="block analogy"><h4>Analogy</h4><p class="em">A house is a break-in risk if it has <em>one</em> unlocked window — we don't average over all the locked ones.</p></div>
+  </div>
+  <ul class="s">
+    <li><span class="u">max<sub>k</sub></span> wraps the <b>whole</b> parenthesis (site + tissue + overlap together), not just s<sup>site</sup> — for each candidate lysine k, add up all three terms at that k, then keep whichever k gives the highest combined total.</li>
+    <li><b>Why max, not sum/average over all lysines?</b> Bloodworth's computational screen identified positions <b>4, 6, 7</b> (within a 9-mer) as generally favourable for adduction — and among the 4 individually validated peptides, K sits at <b>position 4</b> in three of them and <b>position 6</b> in the fourth (7 isn't hit by these particular 4, but was flagged by the wider screen). The signal is concentrated at a <b>few specific positions</b>, not spread evenly — one adducted site is enough to create a neoantigen. Summing would also <b>bias by protein size</b>: a large antigen with many mediocre lysines could outscore a small antigen with one perfectly exposed one, purely from residue count.</li>
+    <li><b>Considered alternative:</b> top-2/top-3 average, as a hedge against one noisy lysine score dominating — not adopted by default, but worth flagging as a sensitivity check.</li>
+  </ul>
+  <div class="say s">Say: <b>"Averaging would punish big proteins for having many safe lysines, and reward big proteins just for having more lysines. Max asks the right question: is there at least one vulnerable site — matching Bloodworth's single-hotspot mechanism."</b></div>
+</div></div>
+
+<!-- Slide 4: s_expr -->
+<div class="slide" id="t1-s5"><div class="bar amberbar"></div><div class="inner">
+  <div class="slidehead"><span class="snum a">SLIDE 5</span><h3>s<sup>expr</sup><sub>j</sub> — is the antigen even in the right place?</h3></div>
+  <div class="role">The tissue term. Depends only on antigen <span class="u">j</span>, from Tabula Muris Senis. <b>Not re-deriving the 3-organ filter</b> — that's already applied. This asks two graded questions on top of it.</div>
+  <div class="symbol a">s<sup>expr</sup><sub>j</sub></div>
+  <div class="cols">
+    <div class="block"><h4>Plain meaning — two questions, not one</h4><p><b>① Magnitude:</b> among antigens that pass the organ/DC filter, <em>how strongly</em> is it expressed there — not just present/absent. <b>② Age trend:</b> does its expression <em>rise with age</em>, matching the known pattern that hypertension and oxidative/IsoLG burden accumulate with age? TMS uniquely gives us the old-vs-young comparison to check this — a single-snapshot dataset like HPA can't.</p></div>
+    <div class="block analogy"><h4>Direct quotes (Rodriguez-Iturbe 2017, Physiol Rev)</h4><p class="em">On age-accumulation: SHR "are normotensive 3–4 wk after birth and develop <b>progressive hypertension as they age</b>." And for a named autoantigen: "<b>SHR are normotensive at 4 wk of age</b> and have overexpression of HSP72. <b>At 40 wk of age, HSP70 and HSP72 are overexpressed</b> in the SHR" — a disease-relevant self-protein's expression measurably <b>rising with age</b> in the same model.</p></div>
+  </div>
+  <ul class="s">
+    <li><b>How:</b> pull normalised expression (log-CPM) for antigen j from the TMS dataset, subset to {kidney, aorta, heart} × {dendritic cell, macrophage}. Take the <b>max</b> across that subset for the magnitude signal — one strongly-expressing tissue is enough, same logic as the outer max<sub>k</sub>.</li>
+    <li><b>Age term — how:</b> compute <span class="u">age<sub>upweight</sub>(j) = log(expr<sub>old</sub> / expr<sub>young</sub>)</span> using TMS's aged-vs-young mice, clipped so one extreme ratio can't dominate. A protein whose expression rises with age scores higher; flat or declining expression scores lower.</li>
+    <li>Upweight expression in <b>kidney / aorta / heart</b> — every rodent model converges on these organs</li>
+    <li>Upweight <b>dendritic-cell / immune</b> expression — where IsoLG adducts actually form</li>
+  </ul>
+  <div class="say s">Say: <b>"We've already filtered by organ — this is asking two more graded questions: how strongly is it expressed there, and does that expression rise with age, matching how hypertension and IsoLG burden accumulate over time."</b></div>
+</div></div>
+
+<!-- Slide 5: s_overlap -->
+<div class="slide" id="t1-s6"><div class="bar amberbar"></div><div class="inner">
+  <div class="slidehead"><span class="snum a">SLIDE 6</span><h3>s<sup>overlap</sup><sub>ijk</sub> — does the antibody reach the site? (verify-tier only)</h3></div>
+  <div class="role">The <b>only</b> term that involves the antibody <span class="u">i</span>. Per-pair, recomputed for every (i, j) — but only ever populated for the shortlist, by design (see caveat below).</div>
+  <div class="symbol a">s<sup>overlap</sup><sub>ijk</sub></div>
+  <div class="cols">
+    <div class="block"><h4>Plain meaning</h4><p>For a specific antibody <span class="u">i</span> and antigen <span class="u">j</span>: does <span class="u">i</span>'s predicted binding footprint fall <b>near the susceptible lysine</b> <span class="u">k</span> found by s<sup>site</sup>?</p></div>
+    <div class="block analogy"><h4>Analogy</h4><p class="em">The unlocked window matters more if the burglar is already standing next to it, not on the other side of the house.</p></div>
+  </div>
+  <ul class="s">
+    <li><b>How (verify tier, shortlist only):</b> AF3/docking — score 1 if k is within ~8Å of any antibody CDR residue in the modelled complex, else 0.</li>
+    <li><b>Deliberately excluded: the ranker's own cross-attention, and any rescue tier's own binding score (e.g. MINT's s<sup>(1)</sup>).</b> Both are already baked into a score s<sup>overlap</sup> would be added to — reusing them here would double-count the same evidence.</li>
+    <li>Neutral by default across the full 20k pool (AF3/docking only runs on the shortlist); still only <em>predicted</em>, not solved, structure — treated as evidence, not conclusion.</li>
+  </ul>
+  <div class="say s">Say: <b>"Sourced only from AF3/docking, not the ranker's own attention — that would double-count evidence already in the binding score. Verify-tier only, adds confidence, never overrides a weak binder."</b></div>
+</div></div>
+
+<!-- Slide 6: weights + alpha -->
+<div class="slide" id="t1-s7"><div class="bar amberbar"></div><div class="inner">
+  <div class="slidehead"><span class="snum a">SLIDE 7</span><h3>w<sub>•</sub> and α<sub>IsoLG</sub> — the volume knobs</h3></div>
+  <div class="role">Recap: s<sup>IsoLG</sup> (Slides 1–6) is the biology score for one pair. Here it plugs into the <b>ranker's tier score s<sup>(r)</sup></b> — r = 0 is the primary ranker, r = 1...R are the rescue tiers from Phase 3.</div>
+  <div class="symbol a eq">s<sup>(r)+IsoLG</sup><sub>ij</sub> = s<sup>(r)</sup><sub>ij</sub> + α<sub>IsoLG</sub> · s<sup>IsoLG</sup><sub>ij</sub></div>
+  <div class="cols">
+    <div class="block"><h4>Plain meaning</h4><p><span class="u">w<sub>site</sub>, w<sub>expr</sub>, w<sub>overlap</sub></span> (inside s<sup>IsoLG</sup>) balance the three ingredients <b>against each other</b>. <span class="u">α<sub>IsoLG</sub></span> is separate — it sets how loud the <em>whole</em> biology score is versus the binding score <span class="u">s<sup>(r)</sup></span> that's already been computed by the ranker/rescue tiers.</p></div>
+    <div class="block analogy"><h4>Analogy</h4><p class="em">A graphic-equaliser: the w's balance the bands (site vs tissue vs overlap), α is the master volume for the whole biology channel versus the binding channel. We tune both, we don't let the model learn them.</p></div>
+  </div>
+  <ul class="s">
+    <li><b>What AbRank can actually check — a safety check, not a hypertension-relevance check:</b> AbRank has <b>no hypertension-specific labels</b> (no IsoLG tags, no disease-tissue-relevance tags) — it's a generic binding-affinity benchmark. So AbRank cannot tell us whether w<sub>site</sub>=0.6 is "biologically correct." What it <em>can</em> check is narrower: does adding α<sub>IsoLG</sub>·s<sup>IsoLG</sup> on top of s<sup>(r)</sup> preserve AbRank's known-pair ranking accuracy (pairwise accuracy, top-K recovery), or does it corrupt it? That's a stability check, bounding α from above — not a validation of the w's themselves.</li>
+    <li><b>The actual weighting of w<sub>site</sub>/w<sub>expr</sub>/w<sub>overlap</sub> — to be discussed:</b> since no benchmark has hypertension ground truth, the relative importance of chemistry vs tissue vs antibody-overlap comes from sensitivity analysis plus supervisor judgment on the resulting biology-prioritised watchlist (Phase 4) — not from an AbRank score. Example numbers like w<sub>site</sub>=0.6, w<sub>expr</sub>=0.3, w<sub>overlap</sub>=0.1 are a starting point to react to in discussion, not a result we can claim is benchmark-validated.</li>
+    <li><b>What biology can and cannot do to the final ranking:</b> because α is bounded, a pair with a <b>strong</b> s<sup>(r)</sup> stays high regardless of its biology score — biology only <b>adds</b>, it never gates or multiplies. So the score is genuinely useful as <b>supplementary re-ranking among already-strong binders</b> (a tie-breaker toward hypertension-relevant candidates). It is <b>not</b> designed to work as a rescue mechanism that promotes a weak binder with a striking biology score into the shortlist — if it did that, α would be tuned too large, which is a failure mode, not a feature.</li>
+    <li><b>Where "rescue by biology" actually happens instead:</b> a weak-binder/high-biology pair is exactly what the <b>IsoLG biology-prioritised watchlist</b> (Phase 4) is for — a separate, human-reviewed side list, not an automatic score boost inside the ranking formula.</li>
+  </ul>
+  <div class="say s">Say: <b>"AbRank only checks that adding biology doesn't break ranking on known pairs — it can't validate hypertension relevance, since it has no hypertension labels. The w's themselves are set with supervisors through sensitivity analysis. And by design, biology only re-ranks among strong binders — it never rescues a weak one; that's what the separate watchlist is for."</b></div>
+</div></div>
+
+</div><!-- /track1 -->
+
+
+<!-- ============ TRACK 2 : SHR ============ -->
+<div class="track" id="t2">
+<h2>Track 2 — the SHR autoantibody anchor, same format</h2>
+
+<!-- SHR Slide 1 -->
+<div class="slide" id="t2-s1"><div class="bar tealbar"></div><div class="inner">
+  <div class="slidehead"><span class="snum t">SLIDE 1</span><h3>Why we need a <em>B-cell</em> anchor</h3></div>
+  <div class="role">Motivation before any symbol — the honest gap in the IsoLG evidence.</div>
+  <div class="symbol t">antibody ≠ T-cell evidence</div>
+  <div class="cols">
+    <div class="block"><h4>The gap</h4><p>Bloodworth's peptides prove <b>T-cell</b> recognition. But SABE studies <b>antibodies (B-cell)</b>. We need at least one piece of evidence on the <em>antibody</em> side of hypertension.</p></div>
+    <div class="block analogy t"><h4>The find</h4><p class="em">Jama 2021 review: <b>autoantibodies develop in SHR</b> (spontaneously hypertensive rats). That is direct antibody-side disease evidence.</p></div>
+  </div>
+  <div class="say s t">Say: <b>"This is the one anchor that speaks the antibody language — so I can argue disease relevance without the T-cell caveat."</b></div>
+</div></div>
+
+<!-- SHR Slide 2 -->
+<div class="slide" id="t2-s2"><div class="bar tealbar"></div><div class="inner">
+  <div class="slidehead"><span class="snum t">SLIDE 2</span><h3>What "autoantibody" means, plainly</h3></div>
+  <div class="role">Define the term before using it as evidence.</div>
+  <div class="symbol t">auto&#8202;+&#8202;antibody</div>
+  <div class="cols">
+    <div class="block"><h4>Plain meaning</h4><p>An antibody that binds the body's <b>own</b> proteins ("auto" = self). In SHR, the immune system makes antibodies against self-tissue — a sign the disease has genuine antibody-driven autoimmunity.</p></div>
+    <div class="block analogy t"><h4>Analogy</h4><p class="em">A guard dog that starts biting the household it's meant to protect. The bites (autoantibodies) are proof something has gone wrong internally.</p></div>
+  </div>
+  <div class="say s t">Say: <b>"Autoantibodies in SHR tell us hypertension isn't only about T cells — antibodies against self-antigens are part of the disease."</b></div>
+</div></div>
+
+<!-- Caveat slide for SHR — moved here, right after slide 2, before the mechanism is built out -->
+<div class="caveat t" id="t2-caveat">
+  <h3>⚠ Caveat (SHR) — no named targets in Jama 2021. Why we still keep this track.</h3>
+  <div class="cols">
+    <div class="block"><h4>The actual problem</h4><p>Jama 2021 is a <b>review</b>, citing Wallukat 1995: it reports <em>that</em> autoantibodies exist in SHR (a <b>rat</b>, <i>Rattus norvegicus</i> model) — it does <u>not</u> name the target proteins, sequences, or epitopes. <b>We cannot build a lookup table with zero named entries.</b> The "SHR target" framing from Slide 1 has no concrete gene to check against TMS.</p></div>
+    <div class="block analogy t"><h4>Analogy</h4><p class="em">A news article saying "burglaries happened here" but never naming which houses. Useful atmosphere, useless as an actual watch-list.</p></div>
+  </div>
+  <p class="tip"><b>Why we still pursue this track:</b> other literature <b>does</b> name concrete autoantibody targets — functional <b>GPCR</b> (G-protein-coupled receptor)-directed autoantibodies against <b>AT1R, α1-AR, β1-AR</b> (with named extracellular-loop epitopes), and <b>HSP70/HSP72</b> (Rodriguez-Iturbe 2017, human anti-HSP70 evidence, age-linked in SHR). Both give Track 2 real, checkable targets instead of an empty promise.</p>
+</div>
+
+<!-- SHR Slide 3 -->
+<div class="slide" id="t2-s3"><div class="bar tealbar"></div><div class="inner">
+  <div class="slidehead"><span class="snum t">SLIDE 3</span><h3>s<sup>autoAb</sup><sub>j</sub> — identity gate first, not a broad scan</h3></div>
+  <div class="role">A narrower, protein-specific mechanism than s<sup>site</sup> — not a general similarity rule that applies to any antigen.</div>
+  <div class="symbol t eq long">s<sup>autoAb</sup><sub>j</sub> = 𝟙[j ∈ named set] · P<sub>exposed</sub>(loop) · align(j's loop, known epitope)</div>
+  <div class="cols">
+    <div class="block"><h4>Plain meaning — two steps, gate then compare</h4><p><b>Step 1 — identity gate:</b> is antigen j one of the ~5 named proteins from the literature (AT1R, α1-AR, β1-AR, or HSP70/HSP72)? A simple gene-ID lookup. <b>If j isn't one of these, s<sup>autoAb</sup><sub>j</sub> = 0 and we stop — no epitope search is run at all.</b> <b>Step 2 — only for the ~5 antigens that pass:</b> extract just the short loop segment from j (not its whole sequence), and check whether <em>that segment</em> aligns well with the known epitope loop, and is surface-exposed.</p></div>
+    <div class="block analogy t"><h4>Analogy</h4><p class="em">Not "does anything in our 20k-antigen pool vaguely resemble this epitope" (that would risk false hits from coincidental short matches) — it's "check the five known suspects by name first; only for those, compare the matching neighbourhood-sized piece, not the whole file."</p></div>
+  </div>
+  <ul class="s">
+    <li><b>Why an identity gate, not a scan — and why failing it means no fallback search:</b> unlike IsoLG-lysine susceptibility (a general chemistry rule — any exposed, reactive lysine on any protein can be adducted), there's no established biological rule that "sequence similarity to AT1R's loop" makes an <em>unrelated</em> protein an autoantibody target. The evidence is specific to these named receptors, not a transferable property. So the gate is a hard boundary, not a shortcut with a slower fallback: antigens outside the named set never get an epitope comparison, by design.</li>
+    <li><b>Both sides of the comparison are short, not whole-protein:</b> the reference is just AT1R's ~20–30 residue loop (not all ~359 residues of AT1R); once j passes the gate, we extract the <em>corresponding short loop region</em> from j's sequence too — so the alignment is loop-vs-loop, never loop-vs-whole-antigen.</li>
+    <li><b>How the loop comparison actually works — pairwise alignment, not BLOSUM62-scan/ESM-C:</b> since j's protein identity is already known after the gate, this is a simple, well-established task — <b>Needleman-Wunsch or Smith-Waterman pairwise alignment</b> (e.g. Biopython's <span class="mono">Align</span> module, or EMBOSS <span class="mono">needle</span>/<span class="mono">water</span>) between j's loop region and the reported human epitope, scored as percent identity. Exact match alone isn't used — mouse vs. human loops often differ by a few residues, so a threshold (e.g. ≥80–90% identity) is more realistic than requiring an identical substring.</li>
+    <li><b>Exposure gate (the missing piece, now added):</b> reuse the same <b>NetSurfP-3.0</b> exposure signal from s<sup>site</sup> — a high-identity loop match means nothing if that loop is buried in the folded receptor, since an antibody can only reach a surface-exposed epitope.</li>
+    <li><b>Named targets and mouse gene IDs:</b> AT1R → <span class="mono">Agtr1a/Agtr1b</span>, α1-AR → <span class="mono">Adra1a</span>, β1-AR → <span class="mono">Adrb1</span>, HSP70/HSP72 → <span class="mono">Hspa1a/Hspa1b</span> — all resolvable directly in TMS/UniProt by gene ID, no similarity search needed to find them.</li>
+    <li><b>How it plugs into the master equation:</b> a fourth term inside the same outer max, alongside site/expr/overlap — <span class="mono">s<sup>IsoLG</sup><sub>ij</sub> = max<sub>k</sub>( w<sub>site</sub>·s<sup>site</sup><sub>jk</sub> + w<sub>expr</sub>·s<sup>expr</sup><sub>j</sub> + w<sub>overlap</sub>·s<sup>overlap</sup><sub>ijk</sub> + w<sub>autoAb</sub>·s<sup>autoAb</sup><sub>j</sub> )</span> — same bounded, sensitivity-tuned weight, never a separate override.</li>
+    <li><b>Caveat — TMS is normal aging, not a stressed/hypertensive model:</b> Hspa1a/Hspa1b are stress-inducible; the Rodriguez-Iturbe HSP70/72 overexpression evidence comes from actively hypertensive SHR rats, not normally-aging TMS mice, so this specific target may look weaker in TMS than in the source literature. The GPCR identity+alignment path doesn't have this problem — it doesn't depend on expression level at all.</li>
+  </ul>
+  <div class="say s t">Say: <b>"It's an identity gate first — is j one of five named proteins — then a pairwise alignment plus exposure check only for those. Not a broad similarity scan across the whole antigen pool, because that mimicry rule isn't established as general biology the way IsoLG-lysine chemistry is."</b></div>
+</div></div>
+
+</div><!-- /track2 -->
+
+
+<!-- ============ REFERENCES SLIDE ============ -->
+<div class="track refs" id="refs">
+<h2>Final slide — the three sources</h2>
+<div class="slide refslide" id="refs-slide"><div class="bar" style="background:linear-gradient(90deg,var(--amber),var(--teal))"></div><div class="inner">
+  <div class="slidehead"><span class="snum" style="background:var(--slate)">REFS</span><h3>Literature this filter is built on</h3></div>
+  <div class="role">One clean slide — title, authors, journal, and link. Read the QR/link aloud only if asked.</div>
+
+  <div class="refrow">
+    <div class="refn">1</div>
+    <div class="meta">
+      <div class="t1">Posttranslationally modified self-peptides promote hypertension in mouse models</div>
+      <div class="t2">Bloodworth et al. · J Clin Invest 2024;134(16):e174374</div>
+      <div class="t3 s">Primary design clue — the 4 validated IsoLG-adducted peptides. <a href="https://doi.org/10.1172/JCI174374">doi.org/10.1172/JCI174374</a></div>
+    </div>
+  </div>
+  <div class="refrow">
+    <div class="refn">2</div>
+    <div class="meta">
+      <div class="t1">Role of the Immune System in Hypertension</div>
+      <div class="t2">Rodriguez-Iturbe et al. · Physiol Rev 2017;97(3):1127–1164</div>
+      <div class="t3 s">Autoantigen classes — isoketal-modified proteins &amp; HSP70. <a href="https://doi.org/10.1152/physrev.00031.2016">doi.org/10.1152/physrev.00031.2016</a></div>
+    </div>
+  </div>
+  <div class="refrow">
+    <div class="refn">3</div>
+    <div class="meta">
+      <div class="t1">Rodent models of hypertension</div>
+      <div class="t2">Jama et al. · Br J Pharmacol 2022;179(5):918–937</div>
+      <div class="t3 s">Model/tissue context &amp; the SHR autoantibody anchor. <a href="https://doi.org/10.1111/bph.15650">doi.org/10.1111/bph.15650</a></div>
+    </div>
+  </div>
+
+</div></div>
+</div>
+
+</div>
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var targets = links.map(function(a){
+    var id = a.getAttribute('href').slice(1);
+    return {a: a, el: document.getElementById(id)};
+  }).filter(function(t){ return t.el; });
+
+  function onScroll(){
+    var pos = window.scrollY + window.innerHeight * 0.28;
+    var current = targets[0];
+    for (var i = 0; i < targets.length; i++){
+      if (targets[i].el.offsetTop <= pos) current = targets[i];
+    }
+    targets.forEach(function(t){
+      var isTeal = t.el.classList.contains('caveat') && t.el.classList.contains('t')
+        || (t.el.closest && t.el.closest('#t2'));
+      t.a.classList.remove('active','t-active');
+      if (t === current){
+        t.a.classList.add('active');
+        if (isTeal) t.a.classList.add('t-active');
+      }
+    });
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll);
+  onScroll();
+})();
+</script>
+</body>
+</html>
