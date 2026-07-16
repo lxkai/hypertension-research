@@ -144,21 +144,21 @@
   <a href="#t1-s6">6 · s·overlap — antibody reach</a>
   <a href="#t1-s7">7 · weights &amp; α</a>
 
-  <div class="toc-group"><span class="toc-dot" style="background:var(--teal)"></span>Track 2 — SHR</div>
+  <div class="toc-group"><span class="toc-dot" style="background:var(--teal)"></span>Track 2 — autoantibody targets</div>
   <a href="#t2-s1">1 · Why a B-cell anchor</a>
   <a href="#t2-s2">2 · What autoantibody means</a>
   <a href="#t2-caveat" class="caveat-link">⚠ Caveat — no named targets</a>
-  <a href="#t2-s3">3 · HSP70/HSP72 lookup</a>
+  <a href="#t2-s3">3 · s·autoAb — curated evidence flag</a>
 
   <div class="toc-group"><span class="toc-dot" style="background:var(--slate2)"></span>Close</div>
   <a href="#refs-slide">References</a>
 </nav>
 <header>
   <div class="kick">SABER · biology-prior filter</div>
-  <p>Two parallel tracks, same format: the <b>IsoLG</b> chemistry filter and the <b>SHR autoantibody</b> disease anchor.</p>
+  <p>Two parallel tracks, same format: the <b>IsoLG</b> chemistry filter and <b>hypertension-associated autoantibody targets</b> curated across models/species.</p>
   <div class="legend">
     <span><span class="dot" style="background:#c2701a"></span> IsoLG track — oxidative / chemistry</span>
-    <span><span class="dot" style="background:#0f7d78"></span> SHR track — antibody / disease anchor</span>
+    <span><span class="dot" style="background:#0f7d78"></span> Autoantibody-target track — cross-species evidence</span>
     <span><span class="dot" style="background:#b7791f"></span> caveat slide</span>
   </div>
 </header>
@@ -174,12 +174,13 @@
   <div class="slidehead"><span class="snum a">SLIDE 1</span><h3>The one equation we'll unpack</h3></div>
   <div class="role">Why this track exists — the direct finding it's built on — then show the whole equation once.</div>
   <div class="block analogy" style="margin-bottom:14px"><h4>Bloodworth et al. 2024 (J Clin Invest)</h4><p class="em">"IsoLG-adducted candidate peptides... are recognized by CD8<sup>+</sup> T cells... and prime hypertension" — 4 specific IsoLG-adducted self-peptides, from kidney-overexpressed proteins, were experimentally validated as disease-relevant neoantigens in hypertensive mice.</p></div>
-  <div class="symbol a eq">s<sup>IsoLG</sup><sub>ij</sub> = max<sub>k</sub> ( w<sub>site</sub>·s<sup>site</sup><sub>jk</sub> + w<sub>expr</sub>·s<sup>expr</sup><sub>j</sub> + w<sub>overlap</sub>·s<sup>overlap</sup><sub>ijk</sub> )</div>
+  <div class="symbol a eq long">s<sup>IsoLG</sup><sub>ij</sub> = w<sub>site</sub>·max<sub>k</sub>(s<sup>site</sup><sub>jk</sub>) + w<sub>expr</sub>·s<sup>expr</sup><sub>j</sub> + w<sub>overlap</sub>·s<sup>overlap</sup><sub>ij,k*</sub> + w<sub>autoAb</sub>·s<sup>autoAb</sup><sub>j</sub></div>
   <div class="cols">
     <div class="block"><h4>What it answers</h4><p>"How much should biology bump this antibody–antigen pair up the priority list — <em>on top of</em> the binding score?"</p></div>
     <div class="block analogy"><h4>Analogy</h4><p class="em">It's a bonus-points rule. The binding model gives the base score; this adds bonus points when the biology looks right for hypertension.</p></div>
   </div>
-  <div class="say s">Say: <b>"Bloodworth gave us 4 experimentally validated adduction sites — that's the evidence base. Three ingredients turn it into a score — a site, a tissue, and an overlap. I'll take one per slide, then show the one honest caveat."</b></div>
+  <p class="tip"><b>Notation:</b> <span class="mono">max<sub>k</sub></span> applies <b>only</b> to s<sup>site</sup> — the term that varies with lysine k. s<sup>expr</sup>, s<sup>overlap</sup>, and s<sup>autoAb</sup> are added directly, since they are constants with respect to k. <span class="mono">k*</span> denotes the specific lysine selected by the s<sup>site</sup> max — if a downstream tool (e.g. docking) evaluates more than one candidate site, the top-N chemistry sites are evaluated, not just k*.</p>
+  <div class="say s">Say: <b>"Bloodworth gave us 4 experimentally validated adduction sites — that's the evidence base. Four ingredients turn it into a score — a site, a tissue, an overlap, and an autoantibody-target flag. I'll take one per slide, then show the one honest caveat."</b></div>
 </div></div>
 
 <!-- Slide 2: what i, j, k mean -->
@@ -234,8 +235,8 @@
   <ul class="s">
     <li><b>① Exposure — how:</b> run <b>NetSurfP-3.0</b> on the antigen sequence → per-residue RSA in [0,1] for every lysine. <span class="u">P<sub>exposed</sub>(k) = RSA(k)</span>. A separate tool call, not a by-product of ESM-C embeddings.
       <br><span class="tag" style="font-size:11.5px;color:#8a5a10">Feasible at 20k? Yes — free for academic use (institutional registration, no cost), GPU-accelerated, ~30–35 min for 20k sequences on comparable hardware (published benchmark: ~100s/1,000 seqs). Run the local standalone version, not the web server — the web server caps jobs at 10,000 sequences.</span></li>
-    <li><b>② Reactivity — how:</b> in the ±3–5 window around k, count nearby K/R (raises pK<sub>a</sub>, less reactive) vs D/E (lowers pK<sub>a</sub>, more reactive) using a simple charge-table lookup. Compared to nothing else — an intrinsic chemistry property.
-      <br><span class="tag" style="font-size:11.5px;color:#8a5a10">What "reactive" means: lysine's tail can be <b>protonated (+charged, "locked")</b> or <b>neutral ("unlocked")</b> — IsoLG can only attach to the neutral form. <b>pK<sub>a</sub> is a dial for how easily it unlocks</b>: lower pK<sub>a</sub> → stays neutral more often → more reactive. Nearby <b>K/R (positive)</b> neighbours raise that dial (locks it up, less reactive); nearby <b>D/E (negative)</b> neighbours lower it (unlocks it more, more reactive). We just count these neighbours as a cheap stand-in for a full pK<sub>a</sub> calculation.</span></li>
+    <li><b>② Sequence-context heuristic:</b> in the ±3–5 window around k, count nearby K/R vs D/E using a simple charge-table lookup, as a rough proxy for local pK<sub>a</sub>. <b>This is an unvalidated heuristic, not a measured chemistry property</b> — real local pK<sub>a</sub>/reactivity depends on 3D electrostatics, solvent environment, and microenvironment effects that a flat sequence-window count cannot capture. It carries a <b>modest weight</b> relative to exposure and motif, and rankings are checked with this term <b>removed entirely</b> to confirm results are robust without it.
+      <br><span class="tag" style="font-size:11.5px;color:#8a5a10">Underlying intuition (still a heuristic, not a validated rule): lysine's tail can be protonated (+charged) or neutral — IsoLG can only attach to the neutral form, and pK<sub>a</sub> shifts that balance. Nearby K/R (positive) neighbours are assumed to raise local pK<sub>a</sub> (less reactive); nearby D/E (negative) neighbours to lower it (more reactive) — a first-order approximation only, not confirmed by structural calculation.</span></li>
     <li><b>③ Motif — how (this is the Bloodworth-inspired part):</b> <b>slide a 9-residue window across the entire antigen</b> (not just centred on k) and score every window's similarity — <b>BLOSUM62</b> (default) or ESM-C cosine — against each of the 4 validated peptides (LAGKNLTHI, YILKLPLPL, GSPKQHEVV, MQLPSKVVL). Take the best-matching window overall; if it contains a lysine, that k's motif score is the alignment similarity.
       <br><span class="tag" style="font-size:11.5px;color:#8a5a10">Feasible at 20k? Yes, with BLOSUM62 as default — a lookup-table sum per window, tens of millions of comparisons total across 20k antigens, seconds–minutes to run. ESM-C cosine similarity is feasible <b>only</b> if pooled from the per-residue embeddings we already compute for the ranker — re-embedding every 9-mer window from scratch would be far too slow.</span>
       <br><span class="tag" style="font-size:11.5px;color:#8a5a10">Getting an embedding for the 4 Bloodworth 9-mers: none exists pre-made — run ESM-C <b>once per peptide</b>, treating each 9-mer as its own tiny standalone sequence (e.g. just "LAGKNLTHI" alone, no surrounding protein), then average its 9 per-residue output vectors into one reference vector. A one-time, negligible cost (4 short sequences), <b>not</b> repeated per antigen.</span>
@@ -247,18 +248,19 @@
 <!-- Slide 3: the max -->
 <div class="slide" id="t1-s4"><div class="bar amberbar"></div><div class="inner">
   <div class="slidehead"><span class="snum a">SLIDE 4</span><h3>max<sub>k</sub> — why we take the best lysine</h3></div>
-  <div class="role">Introduced here because k first appears in s<sup>site</sup> — but it actually wraps the whole formula.</div>
-  <div class="symbol a">max<sub>k ∈ 𝒦<sub>j</sub></sub> ( … )</div>
+  <div class="role">max<sub>k</sub> applies <b>only</b> to s<sup>site</sup> — s<sup>expr</sup> and s<sup>autoAb</sup> don't vary with k, so they sit outside the max.</div>
+  <div class="symbol a">max<sub>k ∈ 𝒦<sub>j</sub></sub> ( s<sup>site</sup><sub>jk</sub> )</div>
   <div class="cols">
-    <div class="block"><h4>Plain meaning</h4><p>An antigen has many lysines (the set <span class="u">𝒦<sub>j</sub></span>). We don't average them — we take the <b>single most susceptible one</b>. One good adduction site is enough to make the antigen disease-relevant.</p></div>
+    <div class="block"><h4>Plain meaning</h4><p>An antigen has many lysines (the set <span class="u">𝒦<sub>j</sub></span>). We don't average them — we take the <b>single most susceptible one</b>, and call it <span class="u">k*</span>. One good adduction site is enough to make the antigen disease-relevant.</p></div>
     <div class="block analogy"><h4>Analogy</h4><p class="em">A house is a break-in risk if it has <em>one</em> unlocked window — we don't average over all the locked ones.</p></div>
   </div>
   <ul class="s">
-    <li><span class="u">max<sub>k</sub></span> wraps the <b>whole</b> parenthesis (site + tissue + overlap together), not just s<sup>site</sup> — for each candidate lysine k, add up all three terms at that k, then keep whichever k gives the highest combined total.</li>
-    <li><b>Why max, not sum/average over all lysines?</b> Bloodworth's computational screen identified positions <b>4, 6, 7</b> (within a 9-mer) as generally favourable for adduction — and among the 4 individually validated peptides, K sits at <b>position 4</b> in three of them and <b>position 6</b> in the fourth (7 isn't hit by these particular 4, but was flagged by the wider screen). The signal is concentrated at a <b>few specific positions</b>, not spread evenly — one adducted site is enough to create a neoantigen. Summing would also <b>bias by protein size</b>: a large antigen with many mediocre lysines could outscore a small antigen with one perfectly exposed one, purely from residue count.</li>
+    <li><b>Scope:</b> max<sub>k</sub> wraps <b>only s<sup>site</sup></b>, not the whole formula. s<sup>expr</sup> and s<sup>autoAb</sup> are constants with respect to k (they describe the antigen, not a specific lysine), so they are added directly in the master equation (Slide 1), not inside a max over k.</li>
+    <li><b>k* and s<sup>overlap</sup>:</b> the lysine selected by this max, k*, is what s<sup>overlap</sup><sub>ij,k*</sub> checks the antibody's footprint against (Slide 6). Where a downstream structural tool (docking) evaluates more than one candidate site rather than only k*, that scope is stated explicitly — e.g. "the top-N chemistry sites are evaluated."</li>
+    <li><b>Why max, not sum/average over all lysines?</b> Bloodworth's computational screen identified positions <b>4, 6, 7</b> (within a 9-mer) as generally favourable for adduction — among the 4 individually validated peptides, K sits at position 4 in three and position 6 in the fourth. The signal concentrates at a <b>few specific positions</b>, not spread evenly. Summing would also <b>bias by protein size</b>: a large antigen with many mediocre lysines could outscore a small antigen with one perfectly exposed one, purely from residue count.</li>
     <li><b>Considered alternative:</b> top-2/top-3 average, as a hedge against one noisy lysine score dominating — not adopted by default, but worth flagging as a sensitivity check.</li>
   </ul>
-  <div class="say s">Say: <b>"Averaging would punish big proteins for having many safe lysines, and reward big proteins just for having more lysines. Max asks the right question: is there at least one vulnerable site — matching Bloodworth's single-hotspot mechanism."</b></div>
+  <div class="say s">Say: <b>"max_k applies only to s^site — s^expr and s^autoAb are antigen-level constants, so they sit outside the max. Averaging over lysines would punish big proteins for having many safe ones; max asks the right question: is there at least one vulnerable site."</b></div>
 </div></div>
 
 <!-- Slide 4: s_expr -->
@@ -271,26 +273,26 @@
     <div class="block analogy"><h4>Direct quotes (Rodriguez-Iturbe 2017, Physiol Rev)</h4><p class="em">On age-accumulation: SHR "are normotensive 3–4 wk after birth and develop <b>progressive hypertension as they age</b>." And for a named autoantigen: "<b>SHR are normotensive at 4 wk of age</b> and have overexpression of HSP72. <b>At 40 wk of age, HSP70 and HSP72 are overexpressed</b> in the SHR" — a disease-relevant self-protein's expression measurably <b>rising with age</b> in the same model.</p></div>
   </div>
   <ul class="s">
-    <li><b>How:</b> pull normalised expression (log-CPM) for antigen j from the TMS dataset, subset to {kidney, aorta, heart} × {dendritic cell, macrophage}. Take the <b>max</b> across that subset for the magnitude signal — one strongly-expressing tissue is enough, same logic as the outer max<sub>k</sub>.</li>
-    <li><b>Age term — how:</b> compute <span class="u">age<sub>upweight</sub>(j) = log(expr<sub>old</sub> / expr<sub>young</sub>)</span> using TMS's aged-vs-young mice, clipped so one extreme ratio can't dominate. A protein whose expression rises with age scores higher; flat or declining expression scores lower.</li>
+    <li><b>How:</b> pull normalised expression (log-CPM) for antigen j from the TMS dataset, subset to {kidney, aorta, heart} × {dendritic cell, macrophage}. Take the <b>max</b> across that subset for the magnitude signal — one strongly-expressing tissue is enough, the same logic used for lysine selection in s<sup>site</sup>.</li>
+    <li><b>Age term — method:</b> TMS is normal ageing in mice, not hypertensive tissue, so a naive <span class="u">log(mean<sub>old</sub> / mean<sub>young</sub>)</span> or a max-across-cells is <b>too weak a proxy</b> — a raw mean ratio can reflect cell-composition shifts, sex differences, or ordinary ageing rather than hypertensive oxidative stress. We compute <b>donor-level pseudobulk differential expression</b> (aggregate counts per donor/replicate before comparing, not per-cell), report with a <b>confidence interval and FDR-corrected significance</b>, and treat age-association as a signal only when it clears that bar. TMS is an appropriate tissue/age <em>context</em> source, with this caveat kept visible wherever the age term is used.</li>
     <li>Upweight expression in <b>kidney / aorta / heart</b> — every rodent model converges on these organs</li>
     <li>Upweight <b>dendritic-cell / immune</b> expression — where IsoLG adducts actually form</li>
   </ul>
-  <div class="say s">Say: <b>"We've already filtered by organ — this is asking two more graded questions: how strongly is it expressed there, and does that expression rise with age, matching how hypertension and IsoLG burden accumulate over time."</b></div>
+  <div class="say s">Say: <b>"We've already filtered by organ — this is asking two more graded questions: how strongly is it expressed there, and does that expression rise with age. The age signal uses donor-level pseudobulk with FDR correction rather than a raw mean ratio, because TMS is normal ageing, not hypertensive tissue."</b></div>
 </div></div>
 
 <!-- Slide 5: s_overlap -->
 <div class="slide" id="t1-s6"><div class="bar amberbar"></div><div class="inner">
-  <div class="slidehead"><span class="snum a">SLIDE 6</span><h3>s<sup>overlap</sup><sub>ijk</sub> — does the antibody reach the site? (verify-tier only)</h3></div>
+  <div class="slidehead"><span class="snum a">SLIDE 6</span><h3>s<sup>overlap</sup><sub>ij,k*</sub> — does the antibody reach the site? (verify-tier only)</h3></div>
   <div class="role">The <b>only</b> term that involves the antibody <span class="u">i</span>. Per-pair, recomputed for every (i, j) — but only ever populated for the shortlist, by design (see caveat below).</div>
-  <div class="symbol a">s<sup>overlap</sup><sub>ijk</sub></div>
+  <div class="symbol a">s<sup>overlap</sup><sub>ij,k*</sub></div>
   <div class="cols">
-    <div class="block"><h4>Plain meaning</h4><p>For a specific antibody <span class="u">i</span> and antigen <span class="u">j</span>: does <span class="u">i</span>'s predicted binding footprint fall <b>near the susceptible lysine</b> <span class="u">k</span> found by s<sup>site</sup>?</p></div>
+    <div class="block"><h4>Plain meaning</h4><p>For a specific antibody <span class="u">i</span> and antigen <span class="u">j</span>: does <span class="u">i</span>'s predicted binding footprint fall <b>near the susceptible lysine k*</b> selected by max<sub>k</sub>(s<sup>site</sup>) on Slide 4?</p></div>
     <div class="block analogy"><h4>Analogy</h4><p class="em">The unlocked window matters more if the burglar is already standing next to it, not on the other side of the house.</p></div>
   </div>
   <ul class="s">
-    <li><b>How (verify tier, shortlist only):</b> AF3/docking — score 1 if k is within ~8Å of any antibody CDR residue in the modelled complex, else 0.</li>
-    <li><b>Deliberately excluded: the ranker's own cross-attention, and any rescue tier's own binding score (e.g. MINT's s<sup>(1)</sup>).</b> Both are already baked into a score s<sup>overlap</sup> would be added to — reusing them here would double-count the same evidence.</li>
+    <li><b>How (verify tier, shortlist only):</b> AF3/docking — score 1 if k* is within ~8Å of any antibody CDR residue in the modelled complex, else 0. Where docking evaluates multiple candidate sites rather than only k*, that scope is stated explicitly (e.g. "top-3 chemistry sites checked").</li>
+    <li><b>Excludes the ranker's own cross-attention, and any rescue tier's own binding score (e.g. MINT's s<sup>(1)</sup>).</b> Both are already baked into the score s<sup>overlap</sup> would be added to — reusing them here would double-count the same evidence.</li>
     <li>Neutral by default across the full 20k pool (AF3/docking only runs on the shortlist); still only <em>predicted</em>, not solved, structure — treated as evidence, not conclusion.</li>
   </ul>
   <div class="say s">Say: <b>"Sourced only from AF3/docking, not the ranker's own attention — that would double-count evidence already in the binding score. Verify-tier only, adds confidence, never overrides a weak binder."</b></div>
@@ -299,15 +301,15 @@
 <!-- Slide 6: weights + alpha -->
 <div class="slide" id="t1-s7"><div class="bar amberbar"></div><div class="inner">
   <div class="slidehead"><span class="snum a">SLIDE 7</span><h3>w<sub>•</sub> and α<sub>IsoLG</sub> — the volume knobs</h3></div>
-  <div class="role">Recap: s<sup>IsoLG</sup> (Slides 1–6) is the biology score for one pair. Here it plugs into the <b>ranker's tier score s<sup>(r)</sup></b> — r = 0 is the primary ranker, r = 1...R are the rescue tiers from Phase 3.</div>
+  <div class="role">s<sup>IsoLG</sup> is the biology score for one pair. It plugs into the <b>ranker's tier score s<sup>(r)</sup></b> — r = 0 is the primary ranker, r = 1...R are the rescue tiers from Phase 3.</div>
   <div class="symbol a eq">s<sup>(r)+IsoLG</sup><sub>ij</sub> = s<sup>(r)</sup><sub>ij</sub> + α<sub>IsoLG</sub> · s<sup>IsoLG</sup><sub>ij</sub></div>
   <div class="cols">
-    <div class="block"><h4>Plain meaning</h4><p><span class="u">w<sub>site</sub>, w<sub>expr</sub>, w<sub>overlap</sub></span> (inside s<sup>IsoLG</sup>) balance the three ingredients <b>against each other</b>. <span class="u">α<sub>IsoLG</sub></span> is separate — it sets how loud the <em>whole</em> biology score is versus the binding score <span class="u">s<sup>(r)</sup></span> that's already been computed by the ranker/rescue tiers.</p></div>
-    <div class="block analogy"><h4>Analogy</h4><p class="em">A graphic-equaliser: the w's balance the bands (site vs tissue vs overlap), α is the master volume for the whole biology channel versus the binding channel. We tune both, we don't let the model learn them.</p></div>
+    <div class="block"><h4>Plain meaning</h4><p><span class="u">w<sub>site</sub>, w<sub>expr</sub>, w<sub>overlap</sub>, w<sub>autoAb</sub></span> (inside s<sup>IsoLG</sup>) balance the four ingredients <b>against each other</b>. <span class="u">α<sub>IsoLG</sub></span> is separate — it sets how loud the <em>whole</em> biology score is versus the binding score <span class="u">s<sup>(r)</sup></span> that's already been computed by the ranker/rescue tiers.</p></div>
+    <div class="block analogy"><h4>Analogy</h4><p class="em">A graphic-equaliser: the w's balance the bands (site vs tissue vs overlap vs autoantibody-flag), α is the master volume for the whole biology channel versus the binding channel. We tune both, we don't let the model learn them.</p></div>
   </div>
   <ul class="s">
     <li><b>What AbRank can actually check — a safety check, not a hypertension-relevance check:</b> AbRank has <b>no hypertension-specific labels</b> (no IsoLG tags, no disease-tissue-relevance tags) — it's a generic binding-affinity benchmark. So AbRank cannot tell us whether w<sub>site</sub>=0.6 is "biologically correct." What it <em>can</em> check is narrower: does adding α<sub>IsoLG</sub>·s<sup>IsoLG</sup> on top of s<sup>(r)</sup> preserve AbRank's known-pair ranking accuracy (pairwise accuracy, top-K recovery), or does it corrupt it? That's a stability check, bounding α from above — not a validation of the w's themselves.</li>
-    <li><b>The actual weighting of w<sub>site</sub>/w<sub>expr</sub>/w<sub>overlap</sub> — to be discussed:</b> since no benchmark has hypertension ground truth, the relative importance of chemistry vs tissue vs antibody-overlap comes from sensitivity analysis plus supervisor judgment on the resulting biology-prioritised watchlist (Phase 4) — not from an AbRank score. Example numbers like w<sub>site</sub>=0.6, w<sub>expr</sub>=0.3, w<sub>overlap</sub>=0.1 are a starting point to react to in discussion, not a result we can claim is benchmark-validated.</li>
+    <li><b>The actual weighting — to be discussed:</b> since no benchmark has hypertension ground truth, the relative importance of chemistry vs tissue vs antibody-overlap vs the curated autoantibody-target flag comes from sensitivity analysis plus supervisor judgment on the resulting biology-prioritised watchlist (Phase 4) — not from an AbRank score. Example numbers are a starting point to react to in discussion, not a result we can claim is benchmark-validated.</li>
     <li><b>What biology can and cannot do to the final ranking:</b> because α is bounded, a pair with a <b>strong</b> s<sup>(r)</sup> stays high regardless of its biology score — biology only <b>adds</b>, it never gates or multiplies. So the score is genuinely useful as <b>supplementary re-ranking among already-strong binders</b> (a tie-breaker toward hypertension-relevant candidates). It is <b>not</b> designed to work as a rescue mechanism that promotes a weak binder with a striking biology score into the shortlist — if it did that, α would be tuned too large, which is a failure mode, not a feature.</li>
     <li><b>Where "rescue by biology" actually happens instead:</b> a weak-binder/high-biology pair is exactly what the <b>IsoLG biology-prioritised watchlist</b> (Phase 4) is for — a separate, human-reviewed side list, not an automatic score boost inside the ranking formula.</li>
   </ul>
@@ -319,7 +321,7 @@
 
 <!-- ============ TRACK 2 : SHR ============ -->
 <div class="track" id="t2">
-<h2>Track 2 — the SHR autoantibody anchor, same format</h2>
+<h2>Track 2 — hypertension-associated autoantibody targets across models/species</h2>
 
 <!-- SHR Slide 1 -->
 <div class="slide" id="t2-s1"><div class="bar tealbar"></div><div class="inner">
@@ -328,9 +330,9 @@
   <div class="symbol t">antibody ≠ T-cell evidence</div>
   <div class="cols">
     <div class="block"><h4>The gap</h4><p>Bloodworth's peptides prove <b>T-cell</b> recognition. But SABE studies <b>antibodies (B-cell)</b>. We need at least one piece of evidence on the <em>antibody</em> side of hypertension.</p></div>
-    <div class="block analogy t"><h4>The find</h4><p class="em">Jama 2021 review: <b>autoantibodies develop in SHR</b> (spontaneously hypertensive rats). That is direct antibody-side disease evidence.</p></div>
+    <div class="block analogy t"><h4>The find</h4><p class="em">Jama et al., 2022 (online 2021): <b>autoantibodies develop in SHR</b> (spontaneously hypertensive rats) — evidence of altered humoral autoimmunity, an antibody-side association.</p></div>
   </div>
-  <div class="say s t">Say: <b>"This is the one anchor that speaks the antibody language — so I can argue disease relevance without the T-cell caveat."</b></div>
+  <div class="say s t">Say: <b>"This gives an antibody-side association — not proof antibodies cause hypertension. It lets us argue disease relevance without the T-cell caveat, while being careful not to overstate causality."</b></div>
 </div></div>
 
 <!-- SHR Slide 2 -->
@@ -339,41 +341,48 @@
   <div class="role">Define the term before using it as evidence.</div>
   <div class="symbol t">auto&#8202;+&#8202;antibody</div>
   <div class="cols">
-    <div class="block"><h4>Plain meaning</h4><p>An antibody that binds the body's <b>own</b> proteins ("auto" = self). In SHR, the immune system makes antibodies against self-tissue — a sign the disease has genuine antibody-driven autoimmunity.</p></div>
-    <div class="block analogy t"><h4>Analogy</h4><p class="em">A guard dog that starts biting the household it's meant to protect. The bites (autoantibodies) are proof something has gone wrong internally.</p></div>
+    <div class="block"><h4>Plain meaning</h4><p>An antibody that binds the body's <b>own</b> proteins ("auto" = self). In SHR, the immune system makes antibodies against self-tissue — <b>evidence of altered humoral autoimmunity</b>, not (on its own) proof that those antibodies cause hypertension. Establishing causation would need transfer or blockade experiments, which this evidence doesn't provide.</p></div>
+    <div class="block analogy t"><h4>Analogy</h4><p class="em">A guard dog that starts biting the household it's meant to protect. The bites (autoantibodies) show something has changed internally — they don't, by themselves, prove the bites are what's making the house sick.</p></div>
   </div>
-  <div class="say s t">Say: <b>"Autoantibodies in SHR tell us hypertension isn't only about T cells — antibodies against self-antigens are part of the disease."</b></div>
+  <div class="say s t">Say: <b>"Autoantibodies in SHR are evidence of altered humoral autoimmunity — an antibody-side association with hypertension, not proof of causation. That's still useful: it tells us antibodies against self-antigens are part of the picture."</b></div>
 </div></div>
 
 <!-- Caveat slide for SHR — moved here, right after slide 2, before the mechanism is built out -->
 <div class="caveat t" id="t2-caveat">
-  <h3>⚠ Caveat (SHR) — no named targets in Jama 2021. Why we still keep this track.</h3>
+  <h3>⚠ Caveat — no named targets in Jama et al. 2022. Why we still keep this track.</h3>
   <div class="cols">
-    <div class="block"><h4>The actual problem</h4><p>Jama 2021 is a <b>review</b>, citing Wallukat 1995: it reports <em>that</em> autoantibodies exist in SHR (a <b>rat</b>, <i>Rattus norvegicus</i> model) — it does <u>not</u> name the target proteins, sequences, or epitopes. <b>We cannot build a lookup table with zero named entries.</b> The "SHR target" framing from Slide 1 has no concrete gene to check against TMS.</p></div>
+    <div class="block"><h4>The actual problem</h4><p>Jama et al., 2022 (online 2021) is a <b>review</b>, citing Wallukat 1995: it reports <em>that</em> autoantibodies exist in SHR (a <b>rat</b>, <i>Rattus norvegicus</i> model) — it does <u>not</u> name the target proteins, sequences, or epitopes. <b>We cannot build a lookup table with zero named entries.</b> The "SHR target" framing from Slide 1 has no concrete gene to check against TMS.</p></div>
     <div class="block analogy t"><h4>Analogy</h4><p class="em">A news article saying "burglaries happened here" but never naming which houses. Useful atmosphere, useless as an actual watch-list.</p></div>
   </div>
-  <p class="tip"><b>Why we still pursue this track:</b> other literature <b>does</b> name concrete autoantibody targets — functional <b>GPCR</b> (G-protein-coupled receptor)-directed autoantibodies against <b>AT1R, α1-AR, β1-AR</b> (with named extracellular-loop epitopes), and <b>HSP70/HSP72</b> (Rodriguez-Iturbe 2017, human anti-HSP70 evidence, age-linked in SHR). Both give Track 2 real, checkable targets instead of an empty promise.</p>
+  <p class="tip"><b>Why we still pursue this track:</b> other literature <b>does</b> name concrete autoantibody targets — but they come from a <b>mix of species and models</b>, not from SHR itself. We use them as <b>translational positive controls</b>, each labelled with its own species/model/evidence grade, not as an SHR-specific target set:</p>
+  <table>
+    <tr><th>Target</th><th>Species / model</th><th>Evidence type</th><th>Grade</th></tr>
+    <tr><td><b>AT1R</b> (angiotensin II receptor 1)</td><td>Human — refractory hypertension, preeclampsia</td><td>Functional agonistic autoantibody, named epitope</td><td>Human clinical, not SHR</td></tr>
+    <tr><td><b>α1-adrenergic receptor</b></td><td>Human — cardiovascular literature</td><td>Functional agonistic autoantibody, named epitope</td><td>Human clinical, not SHR</td></tr>
+    <tr><td><b>β1-adrenergic receptor</b></td><td>Human — cardiovascular literature</td><td>Functional agonistic autoantibody, named epitope</td><td>Human clinical, not SHR</td></tr>
+    <tr><td><b>HSP70/HSP72</b></td><td>Rat (SHR) + human essential hypertension</td><td>Elevated antibody titres, age-linked expression in SHR</td><td>Strongest cross-species overlap of the four</td></tr>
+  </table>
+  <p class="tip">None of these four is a named SHR-specific target — that gap in Jama et al. remains open. They are <b>reasonable translational positive controls</b> precisely because the underlying autoantibody phenomenon is well-documented in hypertension-relevant human/cardiovascular contexts, not because they were derived from SHR.</p>
 </div>
 
 <!-- SHR Slide 3 -->
 <div class="slide" id="t2-s3"><div class="bar tealbar"></div><div class="inner">
-  <div class="slidehead"><span class="snum t">SLIDE 3</span><h3>s<sup>autoAb</sup><sub>j</sub> — identity gate first, not a broad scan</h3></div>
-  <div class="role">A narrower, protein-specific mechanism than s<sup>site</sup> — not a general similarity rule that applies to any antigen.</div>
-  <div class="symbol t eq long">s<sup>autoAb</sup><sub>j</sub> = 𝟙[j ∈ named set] · P<sub>exposed</sub>(loop) · align(j's loop, known epitope)</div>
+  <div class="slidehead"><span class="snum t">SLIDE 3</span><h3>s<sup>autoAb</sup><sub>j</sub> — a curated-prior evidence flag, not a quantitative binding score</h3></div>
+  <div class="role">Loop alignment confirms <b>orthology/mapping</b> — it does not, by itself, show that j is actually autoantibody-targeted. QC gates and evidence weighting are two different things.</div>
+  <div class="symbol t eq long">s<sup>autoAb</sup><sub>j</sub> = QC(j) · evidence_grade(species match, model match, direct evidence)</div>
   <div class="cols">
-    <div class="block"><h4>Plain meaning — two steps, gate then compare</h4><p><b>Step 1 — identity gate:</b> is antigen j one of the ~5 named proteins from the literature (AT1R, α1-AR, β1-AR, or HSP70/HSP72)? A simple gene-ID lookup. <b>If j isn't one of these, s<sup>autoAb</sup><sub>j</sub> = 0 and we stop — no epitope search is run at all.</b> <b>Step 2 — only for the ~5 antigens that pass:</b> extract just the short loop segment from j (not its whole sequence), and check whether <em>that segment</em> aligns well with the known epitope loop, and is surface-exposed.</p></div>
-    <div class="block analogy t"><h4>Analogy</h4><p class="em">Not "does anything in our 20k-antigen pool vaguely resemble this epitope" (that would risk false hits from coincidental short matches) — it's "check the five known suspects by name first; only for those, compare the matching neighbourhood-sized piece, not the whole file."</p></div>
+    <div class="block"><h4>What this score can and cannot claim</h4><p><b>Cannot claim:</b> that loop-sequence identity between mouse j and a human epitope shows j is autoantibody-targeted in mice — high identity only shows the mouse gene is <em>the right ortholog</em>, which is an orthology/mapping fact, not evidence of targeting. <b>Can claim:</b> a curated prior — antigen j corresponds to a protein with <em>documented</em> autoantibody evidence somewhere in the hypertension/cardiovascular literature, graded by how directly that evidence applies to our setting.</p></div>
+    <div class="block analogy t"><h4>Analogy</h4><p class="em">Confirming a mouse gene is "the same receptor" as AT1R is like confirming two buildings have the same street address in different cities — it tells us we're looking at the right building, not that a burglary happened there. The evidence grade is the burglary report; loop identity is just the address check.</p></div>
   </div>
   <ul class="s">
-    <li><b>Why an identity gate, not a scan — and why failing it means no fallback search:</b> unlike IsoLG-lysine susceptibility (a general chemistry rule — any exposed, reactive lysine on any protein can be adducted), there's no established biological rule that "sequence similarity to AT1R's loop" makes an <em>unrelated</em> protein an autoantibody target. The evidence is specific to these named receptors, not a transferable property. So the gate is a hard boundary, not a shortcut with a slower fallback: antigens outside the named set never get an epitope comparison, by design.</li>
-    <li><b>Both sides of the comparison are short, not whole-protein:</b> the reference is just AT1R's ~20–30 residue loop (not all ~359 residues of AT1R); once j passes the gate, we extract the <em>corresponding short loop region</em> from j's sequence too — so the alignment is loop-vs-loop, never loop-vs-whole-antigen.</li>
-    <li><b>How the loop comparison actually works — pairwise alignment, not BLOSUM62-scan/ESM-C:</b> since j's protein identity is already known after the gate, this is a simple, well-established task — <b>Needleman-Wunsch or Smith-Waterman pairwise alignment</b> (e.g. Biopython's <span class="mono">Align</span> module, or EMBOSS <span class="mono">needle</span>/<span class="mono">water</span>) between j's loop region and the reported human epitope, scored as percent identity. Exact match alone isn't used — mouse vs. human loops often differ by a few residues, so a threshold (e.g. ≥80–90% identity) is more realistic than requiring an identical substring.</li>
-    <li><b>Exposure gate (the missing piece, now added):</b> reuse the same <b>NetSurfP-3.0</b> exposure signal from s<sup>site</sup> — a high-identity loop match means nothing if that loop is buried in the folded receptor, since an antibody can only reach a surface-exposed epitope.</li>
-    <li><b>Named targets and mouse gene IDs:</b> AT1R → <span class="mono">Agtr1a/Agtr1b</span>, α1-AR → <span class="mono">Adra1a</span>, β1-AR → <span class="mono">Adrb1</span>, HSP70/HSP72 → <span class="mono">Hspa1a/Hspa1b</span> — all resolvable directly in TMS/UniProt by gene ID, no similarity search needed to find them.</li>
-    <li><b>How it plugs into the master equation:</b> a fourth term inside the same outer max, alongside site/expr/overlap — <span class="mono">s<sup>IsoLG</sup><sub>ij</sub> = max<sub>k</sub>( w<sub>site</sub>·s<sup>site</sup><sub>jk</sub> + w<sub>expr</sub>·s<sup>expr</sup><sub>j</sub> + w<sub>overlap</sub>·s<sup>overlap</sup><sub>ijk</sub> + w<sub>autoAb</sub>·s<sup>autoAb</sup><sub>j</sub> )</span> — same bounded, sensitivity-tuned weight, never a separate override.</li>
-    <li><b>Caveat — TMS is normal aging, not a stressed/hypertensive model:</b> Hspa1a/Hspa1b are stress-inducible; the Rodriguez-Iturbe HSP70/72 overexpression evidence comes from actively hypertensive SHR rats, not normally-aging TMS mice, so this specific target may look weaker in TMS than in the source literature. The GPCR identity+alignment path doesn't have this problem — it doesn't depend on expression level at all.</li>
+    <li><b>An evidence flag, not a similarity score:</b> for each of the ~5 named proteins, a curated grade combines <b>(a) species match</b> (is the direct evidence from mouse, rat, or human?), <b>(b) disease-model match</b> (hypertension-specific, or general cardiovascular?), and <b>(c) directness of evidence</b> (functional autoantibody with named epitope, vs. elevated titres, vs. review-level mention only). This is a small, manually curated table — not a formula computed from sequence.</li>
+    <li><b>Loop identity and exposure are QC criteria, not evidence:</b> before assigning any grade to antigen j, we check (i) j is confirmed the correct mouse ortholog via <b>pairwise alignment</b> (Needleman-Wunsch/Smith-Waterman, percent identity ≥80–90% against the known human loop) and (ii) the matching loop is <b>surface-exposed</b>. Failing either QC check disqualifies the target regardless of how strong the literature evidence is — but <em>passing</em> them does not itself generate evidence, it only confirms the right protein is being scored.</li>
+    <li><b>Exposure source for GPCRs — curated topology, not NetSurfP-3.0:</b> AT1R/α1-AR/β1-AR are GPCRs with <b>published, curated transmembrane topology</b> (UniProt annotates exactly which residue ranges are extracellular vs. membrane-embedded vs. intracellular, from solved structures and validated predictions). That annotation confirms the loop is extracellular. A general sequence-based RSA predictor like NetSurfP-3.0 is <b>not reliable for this question</b> — it estimates local solvent accessibility from sequence alone and isn't designed to resolve membrane-topology questions (extracellular vs. cytoplasmic loop), so it could misclassify a loop's true orientation. NetSurfP-3.0 is appropriate for s<sup>site</sup>'s soluble-protein lysines (Slide 3, Track 1); GPCR loop topology relies on curated annotation instead.</li>
+    <li><b>Identity gate:</b> is antigen j one of the ~5 named proteins? If not, s<sup>autoAb</sup><sub>j</sub> = 0 — no fallback search is run, since there is no established general rule that loop-mimicry alone implies targeting.</li>
+    <li><b>Named targets and mouse gene IDs:</b> AT1R → <span class="mono">Agtr1a/Agtr1b</span>, α1-AR → <span class="mono">Adra1a</span>, β1-AR → <span class="mono">Adrb1</span>, HSP70/HSP72 → <span class="mono">Hspa1a/Hspa1b</span>.</li>
+    <li><b>How it plugs into the master equation:</b> a fourth, antigen-level term added alongside the others — <span class="mono">s<sup>IsoLG</sup><sub>ij</sub> = w<sub>site</sub>·max<sub>k</sub>(s<sup>site</sup><sub>jk</sub>) + w<sub>expr</sub>·s<sup>expr</sup><sub>j</sub> + w<sub>overlap</sub>·s<sup>overlap</sup><sub>ij,k*</sub> + w<sub>autoAb</sub>·s<sup>autoAb</sup><sub>j</sub></span> — same bounded, sensitivity-tuned weight, never a separate override. (See Slide 7 for why max<sub>k</sub> now wraps only the site term.)</li>
   </ul>
-  <div class="say s t">Say: <b>"It's an identity gate first — is j one of five named proteins — then a pairwise alignment plus exposure check only for those. Not a broad similarity scan across the whole antigen pool, because that mimicry rule isn't established as general biology the way IsoLG-lysine chemistry is."</b></div>
+  <div class="say s t">Say: <b>"s^autoAb is a curated evidence flag, not a computed similarity score. Loop alignment is a QC step confirming we've got the right mouse gene — the actual evidence grade comes from a small, manually curated table of species/model/directness, reviewed with supervisors, not from sequence comparison alone."</b></div>
 </div></div>
 
 </div><!-- /track2 -->
@@ -406,7 +415,7 @@
     <div class="refn">3</div>
     <div class="meta">
       <div class="t1">Rodent models of hypertension</div>
-      <div class="t2">Jama et al. · Br J Pharmacol 2022;179(5):918–937</div>
+      <div class="t2">Jama et al. · Br J Pharmacol 2022;179(5):918–937 (online 2021)</div>
       <div class="t3 s">Model/tissue context &amp; the SHR autoantibody anchor. <a href="https://doi.org/10.1111/bph.15650">doi.org/10.1111/bph.15650</a></div>
     </div>
   </div>
